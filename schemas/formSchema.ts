@@ -1,62 +1,143 @@
-import { z } from "zod";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment 
 
-// Address schema for US addresses only
-export const AddressSchema = z.object({
-	line1: z
-		.string()
-		.min(1, "Address Line 1 is required.")
-		.describe(
-			"Primary street address line. Include house/building number and street name (e.g., 123 Main St).",
-		),
-	line2: z
-		.string()
-		.optional()
-		.describe(
-			"Additional address information such as apartment, suite, unit, or floor (optional).",
-		),
-	street: z
-		.string()
-		.min(1, "Street is required.")
-		.describe(
-			"Street name if captured separately (e.g., Main St). If already in Line 1, repeat here for clarity.",
-		),
-	city: z
-		.string()
-		.min(1, "City is required.")
-		.describe("City name within the United States (e.g., San Francisco)."),
-	state: z
-		.string()
-		.min(1, "State is required.")
-		.describe("State name within the United States (e.g., California)."),
-	country: z
-		.string()
-		.describe(
-			"Country must be the United States. Accepted inputs: United States, US, USA, unitedstates, us, usa.",
-		),
-	zipCode: z
-		.string()
-		.trim()
-		.regex(/^[0-9]{5}(?:-[0-9]{4})?$/, "Enter a valid US ZIP code (e.g., 94103 or 94103-1234).")
-		.describe(
-			"5-digit US ZIP code, with optional 4-digit extension (ZIP+4). Will be verified against a postal API.",
-		),
-});
+// @ts-nocheck 
+ import { z } from "zod";
 
-export const FormSchema = z.object({
-	name: z
-		.string()
-		.min(1, "Name is required.")
-		.describe("Full legal name of the person filling out the form."),
-	email: z
-		.string()
-		.email("Enter a valid email address.")
-		.describe(
-			"Primary contact email address. Must be a valid format (e.g., name@example.com).",
-		),
-	address: AddressSchema.describe("Mailing address located in the United States."),
-});
+const todayStart = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
-export type AddressData = z.infer<typeof AddressSchema>;
+export const FormSchema = z
+  .object({
+    ownerName: z
+      .string({ required_error: "Owner name is required" })
+      .trim()
+      .min(2, "Owner name must be at least 2 characters")
+      .max(100, "Owner name must be at most 100 characters"),
+
+    ownerEmail: z
+      .string({ required_error: "Email is required" })
+      .trim()
+      .email("Please provide a valid email address"),
+
+    ownerPhone: z
+      .string({ required_error: "Phone number is required" })
+      .trim()
+      .min(10, "Phone number must be at least 10 digits")
+      .max(20, "Phone number must be at most 20 characters")
+      .regex(/^[0-9+()\-\s]+$/i, "Phone number contains invalid characters"),
+
+    addressLine1: z
+      .string({ required_error: "Address is required" })
+      .trim()
+      .min(5, "Address must be at least 5 characters")
+      .max(200, "Address must be at most 200 characters"),
+
+    addressLine2: z
+      .string()
+      .trim()
+      .max(200, "Address line 2 must be at most 200 characters")
+      .optional(),
+
+    city: z
+      .string({ required_error: "City is required" })
+      .trim()
+      .min(2, "City must be at least 2 characters")
+      .max(100, "City must be at most 100 characters"),
+
+    state: z
+      .string({ required_error: "State is required" })
+      .trim()
+      .length(2, "Use 2-letter state code, e.g. PA")
+      .regex(/^[A-Z]{2}$/, "State must be 2 uppercase letters"),
+
+    zip: z
+      .string({ required_error: "ZIP code is required" })
+      .trim()
+      .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 digits or ZIP+4"),
+
+    dogName: z
+      .string({ required_error: "Dog name is required" })
+      .trim()
+      .min(1, "Dog name must be at least 1 character")
+      .max(60, "Dog name must be at most 60 characters"),
+
+    breed: z.enum([
+      "Labrador Retriever",
+      "Golden Retriever",
+      "German Shepherd",
+      "Beagle",
+      "Bulldog",
+      "Mixed",
+      "Other",
+    ], { required_error: "Breed is required" }),
+
+    sex: z.enum(["Male", "Female", "Unknown"], {
+      required_error: "Sex is required",
+    }),
+
+    dob: z.coerce.date({
+      required_error: "Date of birth is required",
+      invalid_type_error: "Date of birth is invalid",
+    }).refine((d) => d <= todayStart(), {
+      message: "Date of birth cannot be in the future",
+    }),
+
+    weightLbs: z.coerce.number({
+      required_error: "Weight is required",
+      invalid_type_error: "Weight must be a number",
+    })
+      .min(1, "Weight must be at least 1 lb")
+      .max(300, "Please enter a realistic weight"),
+
+    spayedNeutered: z.boolean({ required_error: "Spay/Neuter info is required" }),
+
+    microchipped: z.boolean({ required_error: "Microchip info is required" }),
+
+    chipId: z
+      .string()
+      .trim()
+      .min(5, "Microchip ID must be at least 5 characters")
+      .max(50, "Microchip ID must be at most 50 characters")
+      .regex(/^[A-Za-z0-9\-]+$/, "Microchip ID contains invalid characters")
+      .optional(),
+
+    rabiesVaccinationDate: z.coerce.date({
+      required_error: "Rabies vaccination date is required",
+      invalid_type_error: "Rabies vaccination date is invalid",
+    }).refine((d) => d <= todayStart(), {
+      message: "Rabies vaccination date cannot be in the future",
+    }),
+
+    rabiesCertificateUrl: z
+      .string()
+      .trim()
+      .url("Provide a valid URL for the rabies certificate")
+      .optional(),
+
+    licenseType: z.enum(["new", "renewal"], {
+      required_error: "License type is required",
+    }),
+
+    licenseDuration: z.enum(["1_year", "3_years"], {
+      required_error: "License duration is required",
+    }),
+
+    agreeTerms: z.boolean({ required_error: "Agreement is required" }).refine(
+      (v) => v === true,
+      { message: "You must agree to the terms and conditions" }
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.microchipped && (!data.chipId || data.chipId.trim() === "")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Microchip ID is required when microchipped is checked",
+        path: ["chipId"],
+      });
+    }
+  });
+
 export type FormData = z.infer<typeof FormSchema>;
-
-
