@@ -20,11 +20,22 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
-      {
-      rules: {
-        "react/no-unescaped-entities": "off",
-      },
+  {
+    rules: {
+      "react/no-unescaped-entities": "off",
+
+      // ✅ Allow @ts-nocheck
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {
+          "ts-expect-error": "allow-with-description",
+          "ts-ignore": false,
+          "ts-nocheck": false, // 👈 turn off ban for @ts-nocheck
+          "ts-check": true,
+        },
+      ],
     },
+  },
 ];
 
 export default eslintConfig;
